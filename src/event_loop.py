@@ -19,16 +19,16 @@ class EventLoop:
     def run(self):
         self.is_running = True
         while self.is_running:
-            read_fds = [fd for fd, handlers in self.handlers.items() if handlers['read'] and fd >= 0 and fd < select.MAXFD]
-            write_fds = [fd for fd, handlers in self.handlers.items() if handlers['write'] and fd >= 0 and fd < select.MAXFD]
-            error_fds = [fd for fd, handlers in self.handlers.items() if handlers['error'] and fd >= 0 and fd < select.MAXFD]
+            read_fds = [fd for fd, handlers in self.handlers.items() if handlers['read'] and fd >= 0]
+            write_fds = [fd for fd, handlers in self.handlers.items() if handlers['write'] and fd >= 0]
+            error_fds = [fd for fd, handlers in self.handlers.items() if handlers['error'] and fd >= 0]
 
             if not (read_fds or write_fds or error_fds):
                 continue  # Skip the iteration if there are no valid file descriptors
 
             try:
                 readable, writable, errored = select.select(read_fds, write_fds, error_fds)
-            except ValueError as e:
+            except (ValueError, OSError) as e:
                 print(f"Error in select: {e}")
                 print(f"read_fds: {read_fds}, write_fds: {write_fds}, error_fds: {error_fds}")
                 continue  # Skip this iteration and continue with the next one
