@@ -1,19 +1,18 @@
 from enum import Enum
 import random
-import struct
 
 class TCPState(Enum):
-    CLOSED = 0
-    LISTEN = 1
-    SYN_SENT = 2
+    CLOSED       = 0
+    LISTEN       = 1
+    SYN_SENT     = 2
     SYN_RECEIVED = 3
-    ESTABLISHED = 4
-    FIN_WAIT_1 = 5
-    FIN_WAIT_2 = 6
-    CLOSE_WAIT = 7
-    CLOSING = 8
-    LAST_ACK = 9
-    TIME_WAIT = 10
+    ESTABLISHED  = 4
+    FIN_WAIT_1   = 5
+    FIN_WAIT_2   = 6
+    CLOSE_WAIT   = 7
+    CLOSING      = 8
+    LAST_ACK     = 9
+    TIME_WAIT    = 10
 
 class TCPFlags:
     FIN = 0x01
@@ -24,26 +23,26 @@ class TCPFlags:
     URG = 0x20
 
 class TCPProtocol:
-    def __init__(self, src_ip, src_port, dst_ip, dst_port):
+    def __init__(self, src_ip, src_port, dst_ip=None, dst_port=None):
         self.state = TCPState.CLOSED
-        self.sequence_number = random.randint(0, 2**32 - 1)
-        self.acknowledgment_number = 0
-        self.src_ip = src_ip
-        self.src_port = src_port
-        self.dst_ip = dst_ip
-        self.dst_port = dst_port
+        self.sequence_number  = random.randint(0, 2**32 - 1)
+        self.acknowledgment_number  = 0
+        self.src_ip     = src_ip
+        self.src_port   = src_port
+        self.dst_ip     = dst_ip
+        self.dst_port   = dst_port
         self.window_size = 65535
         self.mss = 1460
         self.send_buffer = []
         self.recv_buffer = []
-
+        
     def handle_packet(self, packet):
         if self.state == TCPState.CLOSED:
             if packet['flags'] & TCPFlags.SYN:
                 return self._handle_syn(packet)
         elif self.state == TCPState.LISTEN:
             if packet['flags'] & TCPFlags.SYN:
-                return self._handle_syn(packet)
+                return self._handle_syn_listen(packet)
         elif self.state == TCPState.SYN_SENT:
             if packet['flags'] & TCPFlags.SYN and packet['flags'] & TCPFlags.ACK:
                 return self._handle_syn_ack(packet)
@@ -76,6 +75,16 @@ class TCPProtocol:
         self.state = TCPState.SYN_RECEIVED
         self.acknowledgment_number = packet['seq_num'] + 1
         return self._create_syn_ack_packet()
+ 
+    def _handle_syn_listen(self, packet):
+        if len(self.pending_connections) < self.backlog:
+            new_conn = TCPProtocol(self.src_ip, self.src_port, packet['src_ip'], packet['src_port'])
+            new_conn.state = TCPState.SYN_RECEIVED
+            new_conn.acknowledgment_number = packet['seq_num'] + 1
+            new_conn.sequence_number = packet['ack_num']
+            self.pending_connections.append(new_conn)
+            return self._create_syn_ack_packet()
+        return None
 
     def _handle_syn_ack(self, packet):
         self.state = TCPState.ESTABLISHED
@@ -131,7 +140,17 @@ class TCPProtocol:
             'window_size': self.window_size,
             'data': b''
         }
+    
+    def _create_data_packet(self):
+        data = bytes(self.send_buffer[:self.mss])
+        self.send_buffer = self.send_buffer[self.mss:]
+        packet = self._create_packet(TCPFlags.PSH | TCPFlags.ACK)
+        packet['data'] = data
+        return packet
 
+    def set_state(self, state):
+        self.state = state
+        
     def connect(self):
         if self.state == TCPState.CLOSED:
             self.state = TCPState.SYN_SENT
@@ -151,20 +170,6 @@ class TCPProtocol:
         if self.state == TCPState.ESTABLISHED:
             self.send_buffer.extend(data)
             return self._create_data_packet()
-        return None
-
-    def _create_data_packet(self):
-        data = bytes(self.send_buffer[:self.mss])
-        self.send_buffer = self.send_buffer[self.mss:]
-        packet = self._create_packet(TCPFlags.PSH | TCPFlags.ACK)
-        packet['data'] = data
-        return packet
-
-    def receive(self, packet):
-        if self.state == TCPState.ESTABLISHED:
-            self.recv_buffer.extend(packet['data'])
-            self.acknowledgment_number += len(packet['data'])
-            return self._create_ack_packet()
         return None
 
     def get_received_data(self):
