@@ -29,7 +29,7 @@ class TestSocketAndProtocols(unittest.TestCase):
         socket = Socket(self.server_ip, self.server_port, SocketType.TCP)
         self.assertTrue(socket.listen())
         self.assertTrue(socket.is_listening)
-        self.assertEqual(socket.protocol.state, TCPState.LISTEN, "The value shoud be equal")
+        self.assertIs(socket.protocol.state, TCPState.LISTEN, "The state should be LISTEN")
 
     def test_03_tcp_connection_establishment(self):
         server_socket = Socket(self.server_ip, self.server_port, SocketType.TCP)
