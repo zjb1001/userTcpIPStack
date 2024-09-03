@@ -1,3 +1,10 @@
+import sys
+import os
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
+
+
 import unittest
 from unittest.mock import Mock
 from src.tcp_protocol import TCPProtocol, TCPState, TCPFlags
