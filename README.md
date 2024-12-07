@@ -31,6 +31,83 @@ UserNetStack is a user-space networking stack implementation in Python. It aims 
                     └── main.py
 ```
 
+## Project Design
+
+状态管理:
+
+目前的TCP状态管理已经包含了基本的TCP状态，但可以进一步完善状态转换逻辑。
+可以添加更多的错误处理和异常状态，如CLOSING状态的处理。
+
+
+缓冲区管理:
+
+实现发送和接收缓冲区，支持数据的分段和重组。
+添加流量控制机制，基于接收窗口大小调整发送速率。
+
+
+定时器和重传机制:
+
+实现重传定时器，支持超时重传。
+添加快速重传和快速恢复算法，提高网络效率。
+
+
+拥塞控制:
+
+实现拥塞窗口（cwnd）和慢启动阈值（ssthresh）。
+添加拥塞控制算法，如慢启动、拥塞避免、快速重传和快速恢复。
+
+
+选项处理:
+
+支持TCP选项的处理，如MSS（最大报文段长度）、窗口缩放、SACK（选择性确认）等。
+
+
+连接管理:
+
+完善三次握手和四次挥手的实现，包括处理各种异常情况。
+实现半关闭状态的处理。
+
+
+套接字API完善:
+
+实现更多的套接字选项，如SO_RCVBUF、SO_SNDBUF等。
+添加非阻塞I/O支持。
+实现select/poll等I/O多路复用机制。
+
+
+错误处理和异常:
+
+完善错误码和异常处理机制。
+实现ICMP错误处理。
+
+
+安全性:
+
+考虑添加基本的安全机制，如SYN cookie来防止SYN洪泛攻击。
+
+
+性能优化:
+
+实现Nagle算法和延迟确认机制。
+考虑添加TCP快速打开（TFO）支持。
+
+
+协议交互:
+
+完善与IP层的交互，处理IP分片和重组。
+实现ARP协议交互，用于IP地址到MAC地址的转换。
+
+
+日志和调试:
+
+添加详细的日志记录功能，便于调试和问题排查。
+实现统计信息收集，如RTT估算、重传次数等。
+
+
+协议扩展:
+
+考虑支持SCTP等其他传输层协议。
+为未来的协议扩展预留接口。
 ## Key Components
 
 1. **Virtual Device Manager**: Interfaces with the operating system's network devices.
